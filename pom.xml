@@ -106,39 +106,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
                 <version>16.0.1</version>
             </dependency>
             <dependency>
-                <groupId>com.netflix.servo</groupId>
-                <artifactId>servo-core</artifactId>
-                <version>0.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.servo</groupId>
-                <artifactId>servo-graphite</artifactId>
-                <version>0.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-core</artifactId>
-                <version>1.4.7</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-metrics-event-stream</artifactId>
-                <version>1.4.7</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-servo-metrics-publisher</artifactId>
-                <version>1.4.7</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.4</version>
-            </dependency>
-            <dependency>
-                <groupId>com.timgroup</groupId>
-                <artifactId>java-statsd-client</artifactId>
-                <version>3.1.0</version>
             </dependency>
             <!-- The io.reactivex dependency is necessary to be available on the compile time due an issue found (on java/maven) -->
             <dependency>
@@ -188,7 +158,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
         <module>config</module>
         <module>extensions</module>
         <module>test</module>
-        <module>hystrix</module>
     </modules>
     <properties>
         <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
