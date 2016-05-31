@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!--
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><!--
 Copyright 2013 Red Hat, Inc. and/or its affiliates.
 
 This file is part of lightblue.
@@ -16,19 +15,18 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses />.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
-        <relativePath />
+        <relativePath/>
         <version>7</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.redhat.lightblue</groupId>
     <artifactId>lightblue-core-pom</artifactId>
     <packaging>pom</packaging>
-    <version>1.11.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <name>lightblue-core: ${project.groupId}|${project.artifactId}</name>
     <description>Lightblue Core components</description>
     <licenses>
@@ -55,12 +53,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.5.3</version>
+                <version>2.7.1</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.5.3</version>
+                <version>2.7.1</version>
             </dependency>
             <dependency>
                 <groupId>com.github.fge</groupId>
@@ -70,13 +68,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.11</version>
+                <version>4.12</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>1.10.8</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.skyscreamer</groupId>
@@ -113,21 +112,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
                 <groupId>com.netflix.servo</groupId>
                 <artifactId>servo-graphite</artifactId>
                 <version>0.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-core</artifactId>
-                <version>1.4.7</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-metrics-event-stream</artifactId>
-                <version>1.4.7</version>
-            </dependency>
-            <dependency>
-                <groupId>com.netflix.hystrix</groupId>
-                <artifactId>hystrix-servo-metrics-publisher</artifactId>
-                <version>1.4.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -187,7 +171,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
         <module>config</module>
         <module>extensions</module>
         <module>test</module>
-        <module>hystrix</module>
     </modules>
     <properties>
         <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
@@ -207,10 +190,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>3.5.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -298,9 +281,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
-                                <configuration>
-                                    <additionalparam>-Xdoclint:none</additionalparam>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -308,22 +288,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <source>1.7</source>
-                            <target>1.7</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
-            <id>java8-disable-strict-javadoc</id>
+            <id>doclint-java8-disable</id>
             <activation>
                 <jdk>[1.8,)</jdk>
             </activation>
-            <properties>
-                <!-- none: disables doclint -->
-                <javadoc.doclint.none>-Xdoclint:none</javadoc.doclint.none>
-            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                         <version>2.9.1</version>
+                       <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
     <reporting>
@@ -340,6 +328,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses />.
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
+                <version>3.0.1</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>

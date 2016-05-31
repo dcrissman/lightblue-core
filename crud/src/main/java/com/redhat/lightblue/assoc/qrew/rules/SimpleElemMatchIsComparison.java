@@ -25,44 +25,41 @@ import com.redhat.lightblue.assoc.qrew.Rewriter;
 import com.redhat.lightblue.util.Path;
 
 /**
- * If 
+ * If
  * <pre>
  *   q={array: X, elemMatch: { x op value } or { x op y } }
- * </pre>
- * this rewrites q as
+ * </pre> this rewrites q as
  * <pre>
  *   q={ field: X.*.x op value | y }
  * </pre>
+ *
+ * This doesn't work for nary comparisons
  */
 public class SimpleElemMatchIsComparison extends Rewriter {
 
-    public static final SimpleElemMatchIsComparison INSTANCE=new SimpleElemMatchIsComparison();
-    
+    public static final SimpleElemMatchIsComparison INSTANCE = new SimpleElemMatchIsComparison();
+
     @Override
     public QueryExpression rewrite(QueryExpression q) {
-        ArrayMatchExpression ae=dyncast(ArrayMatchExpression.class, q);
-        QueryExpression newq=q;
-        if(ae!=null) {
-            QueryExpression nestedq=ae.getElemMatch();
+        ArrayMatchExpression ae = dyncast(ArrayMatchExpression.class, q);
+        QueryExpression newq = q;
+        if (ae != null) {
+            QueryExpression nestedq = ae.getElemMatch();
             ValueComparisonExpression vce;
             FieldComparisonExpression fce;
             NaryValueRelationalExpression nvre;
             NaryFieldRelationalExpression nfre;
-            if( (vce=dyncast(ValueComparisonExpression.class,nestedq))!=null) {
-                newq=new ValueComparisonExpression(normalize(ae,vce.getField()),vce.getOp(),vce.getRvalue());
-            } else if( (fce=dyncast(FieldComparisonExpression.class,nestedq))!=null) {
-                newq=new FieldComparisonExpression(normalize(ae,fce.getField()),fce.getOp(),normalize(ae,fce.getRfield()));
-            } else if( (nvre=dyncast(NaryValueRelationalExpression.class,nestedq))!=null) {
-                newq=new NaryValueRelationalExpression(normalize(ae,nvre.getField()),nvre.getOp(),nvre.getValues());
-            } else if( (nfre=dyncast(NaryFieldRelationalExpression.class,nestedq))!=null) {
-                newq=new NaryFieldRelationalExpression(normalize(ae,nfre.getField()),nfre.getOp(),nfre.getRfield());
+            if ((vce = dyncast(ValueComparisonExpression.class, nestedq)) != null) {
+                newq = new ValueComparisonExpression(normalize(ae, vce.getField()), vce.getOp(), vce.getRvalue());
+            } else if ((fce = dyncast(FieldComparisonExpression.class, nestedq)) != null) {
+                newq = new FieldComparisonExpression(normalize(ae, fce.getField()), fce.getOp(), normalize(ae, fce.getRfield()));
             }
         }
         return newq;
     }
 
-    private Path normalize(ArrayMatchExpression ae,Path field) {
-        Path p=new Path(new Path(ae.getArray(),Path.ANYPATH),field);
+    private Path normalize(ArrayMatchExpression ae, Path field) {
+        Path p = new Path(new Path(ae.getArray(), Path.ANYPATH), field);
         return p.normalize();
     }
 }

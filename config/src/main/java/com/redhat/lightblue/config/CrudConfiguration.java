@@ -44,15 +44,15 @@ public class CrudConfiguration implements JsonInitializable, Serializable {
     public static final transient String FILENAME = "lightblue-crud.json";
 
     private ControllerConfiguration controllers[];
-    private boolean validateRequests=false;
-    private int  bulkParallelExecutions=3;
+    private boolean validateRequests = false;
+    private int bulkParallelExecutions = 3;
 
     public boolean isValidateRequests() {
         return validateRequests;
     }
 
     public void setValidateRequests(boolean b) {
-        validateRequests=b;
+        validateRequests = b;
     }
 
     public int getBulkParallelExecutions() {
@@ -60,7 +60,7 @@ public class CrudConfiguration implements JsonInitializable, Serializable {
     }
 
     public void setBulkParallelExecutions(int i) {
-        bulkParallelExecutions=i;
+        bulkParallelExecutions = i;
     }
 
     /**
@@ -89,7 +89,7 @@ public class CrudConfiguration implements JsonInitializable, Serializable {
      * Validate that the configuration has all data needed.
      */
     public boolean isValid() {
-        return (controllers != null && controllers.length > 0);
+        return controllers != null && controllers.length > 0;
     }
 
     @Override
@@ -109,12 +109,14 @@ public class CrudConfiguration implements JsonInitializable, Serializable {
                 throw new IllegalArgumentException("'controllers' must be instanceof ArrayNode: " + node.toString());
             }
 
-            x=node.get("validateRequests");
-            if(x!=null)
-                validateRequests=x.booleanValue();
-            x=node.get("bulkParallelExecutions");
-            if(x!=null)
-                bulkParallelExecutions=x.intValue();
+            x = node.get("validateRequests");
+            if (x != null) {
+                validateRequests = x.booleanValue();
+            }
+            x = node.get("bulkParallelExecutions");
+            if (x != null) {
+                bulkParallelExecutions = x.intValue();
+            }
         }
     }
 }
