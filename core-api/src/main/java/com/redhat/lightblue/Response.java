@@ -18,18 +18,18 @@
  */
 package com.redhat.lightblue;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.util.Error;
 import com.redhat.lightblue.util.JsonObject;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Response information from mediator APIs
@@ -47,6 +47,7 @@ public class Response extends JsonObject {
     private static final String PROPERTY_DATA_ERRORS = "dataErrors";
     private static final String PROPERTY_ERRORS = "errors";
     private static final String PROPERTY_HOSTNAME = "hostname";
+    private static final String PROPERTY_PRINCIPAL = "principal";
 
     private OperationStatus status;
     private long modifiedCount;
@@ -57,6 +58,7 @@ public class Response extends JsonObject {
     private String hostname;
     private final List<DataError> dataErrors = new ArrayList<>();
     private final List<Error> errors = new ArrayList<>();
+    private String principal;
 
     private final JsonNodeFactory jsonNodeFactory;
 
@@ -207,6 +209,14 @@ public class Response extends JsonObject {
         return errors;
     }
 
+    public String getPrincipal() {
+        return principal;
+    }
+
+    public void setPrincipal(String principal) {
+        this.principal = principal;
+    }
+
     /**
      * Returns JSON representation of this
      */
@@ -220,6 +230,7 @@ public class Response extends JsonObject {
         builder.add(PROPERTY_SESSION, session);
         builder.add(PROPERTY_PROCESSED, entityData);
         builder.add(PROPERTY_HOSTNAME, HOSTNAME);
+        builder.add(PROPERTY_PRINCIPAL, principal);
         builder.addJsonObjectsList(PROPERTY_DATA_ERRORS, dataErrors);
         builder.addErrorsList(PROPERTY_ERRORS, errors);
         return builder.build();
@@ -236,6 +247,7 @@ public class Response extends JsonObject {
         private String hostname;
         private List<DataError> dataErrors = new ArrayList<>();
         private List<Error> errors = new ArrayList<>();
+        private String principal;
 
         private final JsonNodeFactory jsonNodeFactory;
 
@@ -254,6 +266,7 @@ public class Response extends JsonObject {
             dataErrors = response.getDataErrors();
             errors = response.getErrors();
             jsonNodeFactory = response.jsonNodeFactory;
+            principal = response.getPrincipal();
         }
 
         public ResponseBuilder withHostname(JsonNode node) {
@@ -326,6 +339,13 @@ public class Response extends JsonObject {
             }
             return this;
         }
+        
+        public ResponseBuilder withPrincipal(JsonNode node){
+            if (node != null) {
+                principal = node.asText();
+            }
+            return this;
+        }
 
         public Response buildResponse() {
             Response response = new Response(jsonNodeFactory);
@@ -338,6 +358,8 @@ public class Response extends JsonObject {
             response.setEntityData(entityData);
             response.getDataErrors().addAll(dataErrors);
             response.getErrors().addAll(errors);
+            response.setHostname(hostname);
+            response.setPrincipal(principal);
 
             return response;
         }

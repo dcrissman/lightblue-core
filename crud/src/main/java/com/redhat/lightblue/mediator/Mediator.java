@@ -160,6 +160,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;
     }
 
@@ -226,6 +231,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;
     }
 
@@ -307,6 +317,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;
     }
 
@@ -363,6 +378,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;
     }
 
@@ -497,6 +517,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;
     }
 
@@ -554,6 +579,11 @@ public class Mediator {
         } finally {
             Error.pop();
         }
+        
+        if (!response.getErrors().isEmpty()) {
+            response.setPrincipal((req.getClientId() == null) ? "unknown" : req.getClientId().getPrincipal());
+        }
+        
         return response;        
     }
 
