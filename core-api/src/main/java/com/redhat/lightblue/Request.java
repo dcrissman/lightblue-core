@@ -18,6 +18,8 @@
  */
 package com.redhat.lightblue;
 
+import org.slf4j.MDC;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.NullNode;
@@ -30,10 +32,12 @@ import com.redhat.lightblue.crud.CRUDOperation;
  */
 public abstract class Request extends JsonObject {
 
+    public static final String MDC_PRINCIPAL = "principal";
+    
     private EntityVersion entityVersion;
     private ClientIdentification client;
     private ExecutionOptions execution;
-
+    
     /**
      * Entity name and version
      */
@@ -60,6 +64,9 @@ public abstract class Request extends JsonObject {
      */
     public void setClientId(ClientIdentification c) {
         client = c;
+        
+        String principal;
+        MDC.put(MDC_PRINCIPAL, (c == null) ? "Unknown" : ((principal = c.getPrincipal()) == null) ? "Unknown" : principal);
     }
 
     /**
