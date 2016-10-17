@@ -94,7 +94,7 @@ public class ExecutionPlanTest extends AbstractJsonNodeTest {
                 new IndexedFieldScorer(),
                 q,
                 minimalTree).choose();
-        ExecutionPlan ep = new ExecutionPlan(p, null, null, null, md, null, searchQP);
+        ExecutionPlan ep = new ExecutionPlan(q,p, null, null, null, md, null, searchQP);
         ObjectNode j = (ObjectNode) ep.toJson();
 
         System.out.println("retrieveAandBonly");
@@ -129,7 +129,7 @@ public class ExecutionPlanTest extends AbstractJsonNodeTest {
                 q,
                 minimalTree).choose();
         QueryPlan retrievalQP = new QueryPlanChooser(md, new First(), new SimpleScorer(), null, minimalTree).choose();
-        ExecutionPlan ep = new ExecutionPlan(p, null, null, null, md, searchQP, retrievalQP);
+        ExecutionPlan ep = new ExecutionPlan(q,p, null, null, null, md, searchQP, retrievalQP);
         ObjectNode j = (ObjectNode) ep.toJson();
 
         System.out.println("retrieveABC");
@@ -137,7 +137,9 @@ public class ExecutionPlanTest extends AbstractJsonNodeTest {
         System.out.println("minimal tree:" + minimalTree);
 
         JsonNode source = j.get("source");
-        JsonNode assemble1 = source.get("assemble");
+        JsonNode filter1=source.get("filter");
+        JsonNode source2=source.get("source");
+        JsonNode assemble1 = source2.get("assemble");
         Assert.assertEquals("A", assemble1.get("entity").asText());
         JsonNode left1 = assemble1.get("left");
         Assert.assertNotNull(left1.get("copy"));
@@ -170,7 +172,7 @@ public class ExecutionPlanTest extends AbstractJsonNodeTest {
                 q,
                 minimalTree).choose();
 
-        ExecutionPlan ep = new ExecutionPlan(p, null, null, null, md, searchQP, retrievalQP);
+        ExecutionPlan ep = new ExecutionPlan(q,p, null, null, null, md, searchQP, retrievalQP);
         ObjectNode j = (ObjectNode) ep.toJson();
 
         System.out.println("retrieveAandConly_CFirst");
@@ -224,7 +226,7 @@ public class ExecutionPlanTest extends AbstractJsonNodeTest {
                 q,
                 minimalTree).choose();
 
-        ExecutionPlan ep = new ExecutionPlan(p, null, null, null, md, searchQP, retrievalQP);
+        ExecutionPlan ep = new ExecutionPlan(q,p, null, null, null, md, searchQP, retrievalQP);
         ObjectNode j = (ObjectNode) ep.toJson();
 
         System.out.println("rev_search_with_arraycond");

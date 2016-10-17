@@ -83,6 +83,7 @@ public class ExecutionPlan {
     /**
      * Creates an execution plan
      *
+     * @param requestQuery query requested by the client
      * @param requestProjection projection requested by the client
      * @param requestSort sort requested by the client.
      * @param from request.from
@@ -95,7 +96,8 @@ public class ExecutionPlan {
      * documents found by that search. If searchQueryPlan is null, this plan
      * performs the search and retrieval.
      */
-    public ExecutionPlan(Projection requestProjection,
+    public ExecutionPlan(QueryExpression requestQuery,
+                         Projection requestProjection,
                          Sort requestSort,
                          Long from,
                          Long to,
@@ -103,19 +105,28 @@ public class ExecutionPlan {
                          QueryPlan searchQueryPlan,
                          QueryPlan retrievalQueryPlan) {
 
+        // Specifies if a filtering layer is needed at the end of the
+        // pipeline.  This is needed if searchplan returns more than
+        // what's necessary (e.g. if there are query clauses that are
+        // not assigned to query plan nodes or edges)
+        boolean needsFinalFiltering=false;
+
+        // This is set to true when we identify the step that sets matchcount
+        boolean matchCountSet=false;
+
         // First, create execution blocks for every node in the search and
         // retrieval plans. We keep a map of query plan nodes to execution
         // blocks to keep query plan immutable.
         // This needs to be done in two steps: first we create the
         // nodes, then we attach them to each other.
-        ExecutionBlock queryRoot = null;
+        ExecutionBlock rootEntityInQueryPlan = null;
         Map<QueryPlanNode, ExecutionBlock> qp2BlockMap = new HashMap<>();
         if (searchQueryPlan != null) {
             // Create nodes
             for (QueryPlanNode node : searchQueryPlan.getAllNodes()) {
                 ExecutionBlock block = new ExecutionBlock(rootMd, node);
                 if (node.getMetadata().getParent() == null) {
-                    queryRoot = block;
+                    rootEntityInQueryPlan = block;
                 }
                 qp2BlockMap.put(node, block);
             }
@@ -135,11 +146,18 @@ public class ExecutionPlan {
             }
         }
 
+        List<QueryFieldInfo> qfi=null;
         if (searchQueryPlan != null) {
             LOGGER.debug("Building execution plan from search query plan:{}", searchQueryPlan);
             List<Conjunct> unassigned = searchQueryPlan.getUnassignedClauses();
+            
+            // If query root has destinations in the search query plan, then
+            // those destinations are inaccessible, becase we evaluate the search plan
+            // up to root. That means, we'll need to filter
+            if(!unassigned.isEmpty()||rootEntityInQueryPlan.getQueryPlanNode().getDestinations().length>0)
+            	needsFinalFiltering=true;
 
-            List<QueryFieldInfo> qfi = getAllQueryFieldInfo(searchQueryPlan);
+            qfi = getAllQueryFieldInfo(searchQueryPlan);
             // Lets see if the root entity is the only source of this plan
             QueryPlanNode[] qpSources = searchQueryPlan.getSources();
             boolean rootIsTheOnlySource = qpSources.length == 1 && qpSources[0].getMetadata().getParent() == null;
@@ -176,7 +194,7 @@ public class ExecutionPlan {
 
                 // The queries for the search are already set in the query plan node
                 search.setQueries(node.getData().getConjuncts());
-                if (block == queryRoot) {
+                if (block == rootEntityInQueryPlan) {
                     // This is the block for the root entity
                     if (rootIsTheOnlySource) {
                         if (unassigned.isEmpty()) {
@@ -184,6 +202,10 @@ public class ExecutionPlan {
                             // We can sort/limit here
                             search.setLimit(from, to);
                             search.setSort(requestSort);
+                            // We record the match count here
+                            search.setRecordResultSetSize(true);
+                            matchCountSet=true;
+                            // For all other cases, match count is set in the retrieval plan
                         } else {
                             // There are unassigned clauses. We can sort during search, but we can't do filter or limit
                             search.setSort(requestSort);
@@ -193,7 +215,12 @@ public class ExecutionPlan {
                         // Root can be an intermediate query plan node, or there may be more than one sources
 
                         // Make sure we have unique docs
-                        Source<ResultDocument> last = new Source<>(new Unique(block, new Source<>(search)));
+                        Unique u=new Unique(block, new Source<>(search));
+                        if(unassigned.isEmpty()&&!matchCountSet) {
+                            u.setRecordResultSetSize(true);
+                            matchCountSet=true;
+                        }
+                        Source<ResultDocument> last = new Source<>(u);
                         // Sort the results
                         if (requestSort != null) {
                             last = new Source<>(new SortResults(block, last, requestSort));
@@ -229,7 +256,22 @@ public class ExecutionPlan {
         // Done with the search plan. Now we build the execution plan for retrieval
         LOGGER.debug("Building execution plan from retrieval query plan:{}", retrievalQueryPlan);
         List<Conjunct> unassigned = retrievalQueryPlan.getUnassignedClauses();
-        List<QueryFieldInfo> qfi = getAllQueryFieldInfo(retrievalQueryPlan);
+
+        // This is set if there are queries associated with the nodes
+        // that are not the root node of the retrieval plan
+        boolean queries_in_non_root_nodes=false;
+        for(QueryPlanNode node:retrievalQueryPlan.getAllNodes()) {
+            if(node.getSources().length!=0&& // non-root
+               !node.getData().getConjuncts().isEmpty()) {
+                queries_in_non_root_nodes=true;
+                break;
+            }
+        }
+        if(qfi==null) {
+            qfi = getAllQueryFieldInfo(retrievalQueryPlan);
+        } else {
+            qfi.addAll(getAllQueryFieldInfo(retrievalQueryPlan));
+        }
         for (QueryPlanNode node : retrievalQueryPlan.getAllNodes()) {
             ExecutionBlock block = qp2BlockMap.get(node);
             QueryPlanNode[] destinationNodes = node.getDestinations();
@@ -244,39 +286,50 @@ public class ExecutionPlan {
                 // here
                 Source<ResultDocument> last;
                 AbstractSearchStep search;
-                if (queryRoot != null) {
+                if (rootEntityInQueryPlan != null) {
                     // There is a search plan. The search root contains the documents
-                    search = new Copy(block, new Source<>(queryRoot.getResultStep()));
+                    search = new Copy(block, new Source<>(rootEntityInQueryPlan.getResultStep()));
+                    if(!matchCountSet&&unassigned.isEmpty()) {
+                        search.setRecordResultSetSize(true);
+                        matchCountSet=true;
+                    }
                     last = new Source(search);
                 } else {
                     //There is not a search plan. We'll search documents here
                     search = new Search(block);
                     last = new Source<>(search);
-                    if (unassigned.isEmpty()) {
-                        // There are no unassigned clauses
+                    if (unassigned.isEmpty()&&!queries_in_non_root_nodes) {
+                        // There are no unassigned clauses or queries in non-root nodes
                         // We can sort/limit here
                         search.setLimit(from, to);
                         search.setSort(requestSort);
+                        if(!matchCountSet) {
+                            search.setRecordResultSetSize(true);
+                            matchCountSet=true;
+                        }    
                     } else {
                         // There are unassigned clauses. We can sort during search, but we have to filter and limit
                         search.setSort(requestSort);
-                        Filter f = new Filter(block, new Source<>(search), getFilterQuery(unassigned));
-                        last = new Source<>(f);
-                        if (from != null) {
-                            last = new Source<>(new Skip(block, from.intValue(), last));
-                        }
-                        if (to != null) {
-                            last = new Source<>(new Limit(block, to.intValue() - from.intValue() + 1, last));
-                        }
+                        needsFinalFiltering=true;
                     }
                 }
-                search.recordResultSetSize(true);
-
+                
                 Set<Path> fields = getIncludedFieldsOfEntityForSearch(block, qfi);
                 fields.addAll(getIncludedFieldsOfEntityForProjection(block, rootMd, requestProjection));
                 search.setProjection(writeProjection(fields));
                 search.setQueries(node.getData().getConjuncts());
                 resultStep = new Assemble(block, last, destinationBlocks);
+                if(needsFinalFiltering) {
+                    resultStep = new Filter(block, new Source<>(resultStep), requestQuery);
+                    ((Filter)resultStep).setRecordResultSetSize(true);
+                    matchCountSet=true;
+                    if (from != null) {
+                        resultStep = new Skip(block, from.intValue(), new Source<>(resultStep));
+                    }
+                    if (to != null) {
+                        resultStep = new Limit(block, to.intValue() - from.intValue() + 1, new Source<>(resultStep));
+                    }
+                }
                 resultStep = new Project(block, new Source<>(resultStep), requestProjection);
                 block.setResultStep(resultStep);
             } else {
@@ -445,11 +498,6 @@ public class ExecutionPlan {
             }
         }
         return ret;
-    }
-
-    private QueryExpression getFilterQuery(List<Conjunct> list) {
-        List<QueryExpression> l = list.stream().map(c -> c.getClause()).collect(Collectors.toList());
-        return Searches.and(l);
     }
 
     public JsonNode toJson() {
